@@ -1,0 +1,51 @@
+{
+  "works": [
+    {
+      "id": "r1",
+      "revision": 1,
+      "detail": "/d1",
+      "required": [
+        "/shared"
+      ],
+      "optional": [
+        "/o1"
+      ]
+    },
+    {
+      "id": "r2",
+      "revision": 1,
+      "detail": "/d2",
+      "required": [
+        "/shared"
+      ]
+    }
+  ],
+  "events": [
+    {
+      "type": "detail",
+      "work": "r1",
+      "status": 304
+    },
+    {
+      "type": "cancel",
+      "work": "r1"
+    },
+    {
+      "type": "asset_failure",
+      "asset": "/shared"
+    },
+    {
+      "type": "detail_update",
+      "work": "r2",
+      "revision": 2,
+      "required": [
+        "/new"
+      ]
+    },
+    {
+      "type": "old_asset_complete",
+      "asset": "/shared",
+      "revision": 1
+    }
+  ]
+}

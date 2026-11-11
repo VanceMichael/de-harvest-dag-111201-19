@@ -1,0 +1,15 @@
+{
+  "nodes": {
+    "index": "/index",
+    "detail": "/item/1",
+    "asset": "/asset/a"
+  },
+  "dependencies": {
+    "detail": [
+      "index"
+    ],
+    "asset": [
+      "detail"
+    ]
+  }
+}
