@@ -46,16 +46,33 @@ class StorageTests(unittest.TestCase):
 
 class TransportTests(unittest.TestCase):
     def test_scripted_responses_and_requests(self):
-        with replay_server({'/x': [dict(status=429, headers={'Retry-After': '2'}), dict(body='收到')]}) as (base, calls):
+        with replay_server({'/x': [dict(status=429, headers={'Retry-After': '2'}), dict(body='收到')]}) as (base, calls, release_gate):
             self.assertEqual(Client().request(base + '/x')[0], 429)
             self.assertEqual(Client().request(base + '/x')[2].decode(), '收到')
             self.assertEqual(Client().request(base + '/missing')[0], 404)
             self.assertEqual(len(calls), 3)
 
     def test_post_body(self):
-        with replay_server({'/x': [dict(body='完成')]}) as (base, calls):
+        with replay_server({'/x': [dict(body='完成')]}) as (base, calls, release_gate):
             Client().request(base + '/x', method='POST', body=b'a=1')
             self.assertEqual(calls[0]['body'], 'a=1')
+
+    def test_gate_blocks_until_released(self):
+        import threading
+        with replay_server({'/x': [dict(body='放行', gate='g1')]}) as (base, calls, release_gate):
+            result = {}
+
+            def worker():
+                result['status'] = Client().request(base + '/x')[0]
+
+            thread = threading.Thread(target=worker)
+            thread.start()
+            thread.join(timeout=0.3)
+            self.assertTrue(thread.is_alive())  # 门闩未放行，请求仍在途
+            release_gate('g1')
+            thread.join(timeout=2)
+            self.assertFalse(thread.is_alive())
+            self.assertEqual(result['status'], 200)
 
 
 class ImportTests(unittest.TestCase):

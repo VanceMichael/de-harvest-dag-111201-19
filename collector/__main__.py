@@ -10,19 +10,27 @@ from .transport import Client, replay_server
 
 def main():
     parser = argparse.ArgumentParser(description='本地采集与凭据查看')
-    parser.add_argument('command', choices=['demo', 'import', 'show', 'serve'])
+    parser.add_argument('command', choices=['demo', 'graph', 'import', 'show', 'serve'])
     parser.add_argument('--input', default='fixtures/sample.json')
+    parser.add_argument('--fixture', default='fixtures/graph.json')
     parser.add_argument('--db', default='var/records.sqlite3')
     parser.add_argument('--port', type=int, default=8080)
+    parser.add_argument('--network', action='store_true',
+                        help='graph 演示使用真实回环 HTTP 来源（默认进程内脚本化客户端）')
     arguments = parser.parse_args()
     if arguments.command == 'serve':
         from .api import serve
         serve(arguments.db, arguments.port)
         return
+    if arguments.command == 'graph':
+        from .scenario import run_demo
+        run_demo(fixture_path=arguments.fixture, network=arguments.network,
+                 db_path=None if arguments.db == 'var/records.sqlite3' else arguments.db)
+        return
     if arguments.command == 'demo':
         with tempfile.TemporaryDirectory() as directory:
             payload = Path(arguments.input).read_bytes()
-            with replay_server({'/source': [dict(body=payload.decode('utf-8'))]}) as (base, calls):
+            with replay_server({'/source': [dict(body=payload.decode('utf-8'))]}) as (base, calls, release_gate):
                 status, headers, raw = Client().request(base + '/source')
                 if status != 200:
                     raise RuntimeError('本地来源未返回成功响应')
